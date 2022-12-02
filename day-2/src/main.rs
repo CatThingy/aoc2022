@@ -12,43 +12,39 @@ fn main() {
         let player = values[1];
 
         match player {
-            // Rock
+            // Lose
             "X" => {
-                total_score += 1;
-
                 total_score += match opponent {
-                    // Rock
-                    "A" => 3,
-                    // Paper
-                    "B" => 0,
-                    // Scissors
-                    "C" => 6,
+                    // Rock; choose scissors
+                    "A" => 0 + 3,
+                    // Paper; choose rock
+                    "B" => 0 + 1,
+                    // Scissors; choose paper
+                    "C" => 0 + 2,
                     _ => unreachable!(),
                 }
             }
-            // Paper
+            // Draw
             "Y" => {
-                total_score += 2;
                 total_score += match opponent {
-                    // Rock
-                    "A" => 6,
-                    // Paper
-                    "B" => 3,
-                    // Scissors
-                    "C" => 0,
+                    // Rock; choose rock
+                    "A" => 3 + 1,
+                    // Paper; choose paper
+                    "B" => 3 + 2,
+                    // Scissors; choose scissors
+                    "C" => 3 + 3,
                     _ => unreachable!(),
                 }
             }
-            // Scissors
+            // Win
             "Z" => {
-                total_score += 3;
                 total_score += match opponent {
-                    // Rock
-                    "A" => 0,
-                    // Paper
-                    "B" => 6,
-                    // Scissors
-                    "C" => 3,
+                    // Rock; choose paper
+                    "A" => 6 + 2,
+                    // Paper; choose scissors
+                    "B" => 6 + 3,
+                    // Scissors; choose rock
+                    "C" => 6 + 1,
                     _ => unreachable!(),
                 }
             }
