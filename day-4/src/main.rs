@@ -17,8 +17,12 @@ fn main() {
             .map(|v| (v.0.parse::<u32>().unwrap(), v.1.parse::<u32>().unwrap()))
             .unwrap();
 
-        if (range_1.0 >= range_2.0 && range_1.1 <= range_2.1)
-            || (range_1.0 <= range_2.0 && range_1.1 >= range_2.1)
+        // |----|
+        //     |--|
+        if (range_1.0 <= range_2.1 && range_1.0 >= range_2.0)
+            || (range_1.1 <= range_2.1 && range_1.1 >= range_2.0)
+            || (range_2.0 <= range_1.1 && range_2.0 >= range_1.0)
+            || (range_2.1 <= range_1.1 && range_2.1 >= range_1.0)
         {
             total += 1;
         }
