@@ -36,9 +36,13 @@ fn main() {
                 let target = val[3].parse::<usize>().unwrap() - 1;
                 let dest = val[5].parse::<usize>().unwrap() - 1;
 
+                let mut removed = Vec::with_capacity(count);
                 for _ in 0..count {
-                    let removed = stack[target].pop_front().unwrap();
-                    stack[dest].push_front(removed);
+                    removed.push(stack[target].pop_front().unwrap());
+                }
+
+                for removed in removed.iter().rev() {
+                    stack[dest].push_front(*removed);
                 }
             }
         }
