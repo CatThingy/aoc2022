@@ -3,13 +3,13 @@ use std::collections::VecDeque;
 fn main() {
     let input = std::io::stdin();
     let mut buf = String::new();
-    let mut count = 4;
+    let mut count = 14;
     let Ok(_) = input.read_line(&mut buf) else { return; };
     let chars = buf.chars();
 
-    let mut current = chars.take(4).collect::<VecDeque<char>>();
+    let mut current = chars.take(14).collect::<VecDeque<char>>();
 
-    for char in buf.chars().skip(4) {
+    for char in buf.chars().skip(14) {
         if confirm_uniqueness(&current) {
             break;
         }
