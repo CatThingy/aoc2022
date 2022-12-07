@@ -1,5 +1,8 @@
 use std::{collections::HashMap, rc::Rc};
 
+const FILESYSTEM_SIZE: u32 = 70000000;
+const REQUIRED_SPACE: u32 = 30000000;
+
 fn main() {
     let input = std::io::stdin();
 
@@ -70,17 +73,18 @@ fn main() {
     drop(traversal_tree);
 
     let mut sizes = HashMap::new();
-    get_size(Rc::get_mut(&mut root).unwrap());
+    let root_size = get_size(Rc::get_mut(&mut root).unwrap());
     get_directory_sizes(&root, &mut sizes, "");
 
-    dbg!(&sizes);
+    let available_space = FILESYSTEM_SIZE - root_size;
 
-    let size_total = sizes
+    let mut sorted_sizes = sizes.iter().collect::<Vec<_>>();
+    sorted_sizes.sort_by_key(|v| v.1);
+    let smallest = sorted_sizes
         .iter()
-        .filter(|v| v.1 <= &100000)
-        .fold(0_u32, |a, v| a + dbg!(v.1));
+        .find(|v| available_space + v.1 >= REQUIRED_SPACE);
 
-    dbg!(size_total);
+    println!("{}", smallest.unwrap().1);
 }
 
 #[derive(Debug)]
