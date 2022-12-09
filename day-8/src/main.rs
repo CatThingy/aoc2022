@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 fn main() {
     let input = std::io::stdin();
@@ -11,95 +11,82 @@ fn main() {
         if line.len() == 0 {
             break;
         };
-        size.1 = size.1.max(y);
+        size.1 = size.1.max(y as u32);
 
         for (x, char) in line.chars().enumerate() {
             if char.is_numeric() {
-                size.0 = size.0.max(x);
+                size.0 = size.0.max(x as u32);
                 trees.insert((x as u32, y as u32), char as u8 - '0' as u8);
             }
         }
     }
-    dbg!(size);
+    let mut max_score = 0;
+    for (tree, _) in trees.iter() {
+        max_score = max_score.max(get_scenic_score(&trees, tree, &size));
+    }
 
-    let mut visible = HashSet::<(u32, u32)>::new();
+    println!("{max_score}");
+}
 
-    for x in 1..size.0 {
-        let mut current_tree: Option<u8> = None;
+fn get_scenic_score(
+    trees: &HashMap<(u32, u32), u8>,
+    position: &(u32, u32),
+    size: &(u32, u32),
+) -> u32 {
+    let this_tree = trees.get(position).unwrap();
+    let mut scenic_score = 1_u32;
 
-        // top row
-        for y in 0..size.1 {
-            let next_tree = trees.get(&(x as u32, y as u32)).unwrap();
+    // up
+    let mut count = 0;
+    for y in (0..position.1).rev() {
+        count += 1;
+        let next_tree = trees.get(&(position.0 as u32, y as u32)).unwrap();
 
-            match current_tree {
-                Some(tree) if tree < *next_tree => {
-                    current_tree = Some(tree.max(*next_tree));
-                    visible.insert((x as u32, y as u32));
-                }
-                None => {
-                    current_tree = Some(*next_tree);
-                    visible.insert((x as u32, y as u32));
-                }
-                _ => (),
-            }
-        }
-
-        current_tree = None;
-
-        // bottom row
-        for y in (1..=size.1).rev() {
-            let next_tree = trees.get(&(x as u32, y as u32)).unwrap();
-            match current_tree {
-                Some(tree) if tree < *next_tree => {
-                    current_tree = Some(tree.max(*next_tree));
-                    visible.insert((x as u32, y as u32));
-                }
-                None => {
-                    current_tree = Some(*next_tree);
-                    visible.insert((x as u32, y as u32));
-                }
-                _ => (),
-            }
+        if next_tree >= this_tree {
+            break;
         }
     }
 
-    for y in 1..size.0 {
-        let mut current_tree: Option<u8> = None;
+    scenic_score *= count;
 
-        // left column
-        for x in 0..size.1 {
-            let next_tree = trees.get(&(x as u32, y as u32)).unwrap();
-            match current_tree {
-                Some(tree) if tree < *next_tree => {
-                    current_tree = Some(tree.max(*next_tree));
-                    visible.insert((x as u32, y as u32));
-                }
-                None => {
-                    current_tree = Some(*next_tree);
-                    visible.insert((x as u32, y as u32));
-                }
-                _ => (),
-            }
-        }
-        current_tree = None;
+    count = 0;
 
-        // right column
-        for x in (1..=size.1).rev() {
-            let next_tree = trees.get(&(x as u32, y as u32)).unwrap();
-            match current_tree {
-                Some(tree) if tree < *next_tree => {
-                    current_tree = Some(tree.max(*next_tree));
-                    visible.insert((x as u32, y as u32));
-                }
-                None => {
-                    current_tree = Some(*next_tree);
-                    visible.insert((x as u32, y as u32));
-                }
-                _ => (),
-            }
+    // down
+    for y in (position.1 + 1)..=size.1 {
+        count += 1;
+        let next_tree = trees.get(&(position.0 as u32, y as u32)).unwrap();
+
+        if next_tree >= this_tree {
+            break;
         }
     }
 
-    // didn't count corners, so +4
-    println!("{:?}", visible.iter().len() + 4);
+    scenic_score *= count;
+
+    count = 0;
+
+    for x in (0..position.0).rev() {
+        count += 1;
+        let next_tree = trees.get(&(x as u32, position.1 as u32)).unwrap();
+
+        if next_tree >= this_tree {
+            break;
+        }
+    }
+
+    scenic_score *= count;
+
+    count = 0;
+
+    for x in (position.0 + 1)..=size.0 {
+        count += 1;
+        let next_tree = trees.get(&(x as u32, position.1 as u32)).unwrap();
+        if next_tree >= this_tree {
+            break;
+        }
+    }
+
+    scenic_score *= count;
+
+    return scenic_score;
 }
