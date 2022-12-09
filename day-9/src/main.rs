@@ -1,13 +1,12 @@
 use std::{
     collections::HashSet,
-    ops::{Add, AddAssign, SubAssign, Sub},
+    ops::{Add, AddAssign, Sub, SubAssign},
 };
 
 fn main() {
     let input = std::io::stdin();
 
-    let mut head = Coord::new(0, 0);
-    let mut tail = Coord::new(0, 0);
+    let mut knots = [Coord::new(0, 0); 10];
 
     let mut visited = HashSet::<Coord>::new();
 
@@ -31,18 +30,41 @@ fn main() {
         let amount = command[1].parse::<i32>().unwrap();
 
         for _ in 0..amount {
-            head += direction;
+            knots[0] += direction;
 
-            if head.distance(tail) > 1 {
-                tail = head - direction;
+            for i in 1..10 {
+                let offset = knots[i - 1] - knots[i];
+                let len = offset.distance(Coord { x: 0, y: 0 });
+                if len > 1 {
+                    let move_direction = if offset.x.abs() + offset.y.abs() > 1 {
+                        if offset.x.abs() > offset.y.abs() {
+                            Coord {
+                                x: offset.x.signum(),
+                                y: 0,
+                            }
+                        } else if offset.x.abs() < offset.y.abs() {
+                            Coord {
+                                x: 0,
+                                y: offset.y.signum(),
+                            }
+                        } else {
+                            Coord {
+                                x: offset.x.signum(),
+                                y: offset.y.signum(),
+                            }
+                        }
+                    } else {
+                        offset
+                    };
+
+                    knots[i] = knots[i - 1] - move_direction;
+                }
             }
-            visited.insert(tail);
-
-            dbg!((head, tail));
+            visited.insert(knots[9]);
         }
     }
 
-    dbg!(visited.len());
+    println!("{}", visited.len());
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
