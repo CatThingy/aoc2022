@@ -3,6 +3,8 @@ use std::cell::RefCell;
 fn main() {
     let mut input = std::io::stdin().lines();
 
+    let mut gcd = 1;
+
     let mut monkeys = Vec::<Monkey>::new();
 
     while let Some(Ok(_)) = input.next() {
@@ -14,7 +16,7 @@ fn main() {
             .unwrap()
             .1
             .split(", ")
-            .map(|v| v.parse::<u32>().unwrap())
+            .map(|v| v.parse::<u64>().unwrap())
             .collect::<Vec<_>>();
 
         let next = input.next().unwrap().unwrap();
@@ -22,6 +24,13 @@ fn main() {
 
         let next = input.next().unwrap().unwrap();
         let test = next.split_once(": ").unwrap().1;
+
+        gcd *= test
+            .split_whitespace()
+            .last()
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
 
         let next = input.next().unwrap().unwrap();
         let true_eff = next.split_once(": ").unwrap().1;
@@ -39,20 +48,21 @@ fn main() {
             test,
         });
 
+        dbg!(gcd);
+
         input.next();
     }
 
-    let mut inspection_counts = Vec::<u32>::with_capacity(monkeys.len());
+    let mut inspection_counts = Vec::<u64>::with_capacity(monkeys.len());
 
     for _ in 0..monkeys.len() {
         inspection_counts.push(0);
     }
 
-    for _ in 0..20 {
+    for _ in 0..10000 {
         for (i, monkey) in monkeys.iter().enumerate() {
             for mut item in monkey.items.take().drain(..) {
-                item = (monkey.operation)(item) / 3;
-
+                item = (monkey.operation)(item) % gcd;
                 inspection_counts[i] += 1;
 
                 let throw_target = (monkey.test)(item);
@@ -66,41 +76,41 @@ fn main() {
 }
 
 struct Monkey {
-    items: RefCell<Vec<u32>>,
-    operation: Box<dyn Fn(u32) -> u32>,
-    test: Box<dyn Fn(u32) -> usize>,
+    items: RefCell<Vec<u64>>,
+    operation: Box<dyn Fn(u64) -> u64>,
+    test: Box<dyn Fn(u64) -> usize>,
 }
 
-fn operation_from_string(operation: &str) -> Box<dyn Fn(u32) -> u32> {
+fn operation_from_string(operation: &str) -> Box<dyn Fn(u64) -> u64> {
     let operation = operation.split_whitespace().collect::<Vec<_>>();
 
-    let second_operand = operation[4].parse::<u32>();
+    let second_operand = operation[4].parse::<u64>();
 
     match operation[3] {
         "+" => {
             if let Ok(op) = second_operand {
-                Box::new(move |v: u32| v + op)
+                Box::new(move |v: u64| v + op)
             } else {
-                Box::new(|v: u32| v + v)
+                Box::new(|v: u64| v + v)
             }
         }
         "*" => {
             if let Ok(op) = second_operand {
-                Box::new(move |v: u32| v * op)
+                Box::new(move |v: u64| v * op)
             } else {
-                Box::new(|v: u32| v * v)
+                Box::new(|v: u64| v * v)
             }
         }
         _ => unreachable!(),
     }
 }
 
-fn test_from_str(test: &str, true_eff: &str, false_eff: &str) -> Box<dyn Fn(u32) -> usize> {
+fn test_from_str(test: &str, true_eff: &str, false_eff: &str) -> Box<dyn Fn(u64) -> usize> {
     let dividend = test
         .split_whitespace()
         .last()
         .unwrap()
-        .parse::<u32>()
+        .parse::<u64>()
         .unwrap();
 
     let true_eff = true_eff
@@ -116,7 +126,7 @@ fn test_from_str(test: &str, true_eff: &str, false_eff: &str) -> Box<dyn Fn(u32)
         .parse::<usize>()
         .unwrap();
 
-    Box::new(move |v: u32| {
+    Box::new(move |v: u64| {
         if v % dividend == 0 {
             true_eff
         } else {
