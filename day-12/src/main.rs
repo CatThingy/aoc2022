@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, VecDeque},
-    hash::{Hash, Hasher},
     ops::{Add, AddAssign, Sub, SubAssign},
 };
 
@@ -17,7 +16,7 @@ fn main() {
     let mut heightmap = HashMap::<Coord, u8>::new();
     let mut edges = HashMap::<Coord, Vec<Coord>>::new();
 
-    let mut start = Coord::new(-1, -1);
+    let mut starts = Vec::<Coord>::new();
     let mut end = Coord::new(-1, -1);
     for (y, line) in input.lines().enumerate() {
         let Ok(line) = line else { break; };
@@ -25,10 +24,7 @@ fn main() {
         for (x, char) in line.chars().enumerate() {
             let coord = Coord::new(x as i32, y as i32);
             let height = match char {
-                'S' => {
-                    start = coord;
-                    0
-                }
+                'S' => 0,
                 'E' => {
                     end = coord;
                     25
@@ -36,6 +32,10 @@ fn main() {
                 'a'..='z' => char as u8 - 'a' as u8,
                 _ => unreachable!(),
             };
+
+            if height == 0 {
+                starts.push(coord);
+            }
 
             heightmap.insert(coord, height);
         }
@@ -45,7 +45,9 @@ fn main() {
         let mut new_edges = Vec::with_capacity(4);
         for direction in DIRECTIONS {
             match heightmap.get(&(*coord + direction)) {
-                Some(neighbour_height) if height >= neighbour_height || height.abs_diff(*neighbour_height) == 1 => {
+                Some(neighbour_height)
+                    if height >= neighbour_height || height.abs_diff(*neighbour_height) == 1 =>
+                {
                     new_edges.push(*coord + direction);
                 }
                 _ => {}
@@ -54,59 +56,57 @@ fn main() {
         edges.insert(*coord, new_edges);
     }
 
-    let mut explored = HashMap::<Coord, SearchNode>::new();
-    let mut exploration_queue = VecDeque::<SearchNode>::new();
+    let mut lengths = Vec::<u32>::new();
 
-    let begin_node = SearchNode {
-        coord: start,
-        prev: None,
-    };
-    explored.insert(start, begin_node.clone());
+    for start in starts {
+        let mut explored = HashMap::<Coord, SearchNode>::new();
+        let mut exploration_queue = VecDeque::<SearchNode>::new();
+        let begin_node = SearchNode {
+            coord: start,
+            prev: None,
+        };
+        explored.insert(start, begin_node.clone());
 
-    exploration_queue.push_back(begin_node);
+        exploration_queue.push_back(begin_node);
 
-    let mut dest = SearchNode {
-        coord: Coord::new(-1, -1),
-        prev: None,
-    };
-    while let Some(next) = exploration_queue.pop_front() {
-        if next.coord == end {
-            dest = next;
-            break;
-        }
+        let mut dest = SearchNode {
+            coord: Coord::new(-1, -1),
+            prev: None,
+        };
+        while let Some(next) = exploration_queue.pop_front() {
+            if next.coord == end {
+                dest = next;
+                break;
+            }
 
-        for edge_coord in edges.get(&next.coord).unwrap() {
-            if !explored.contains_key(edge_coord) {
-                let new_node = SearchNode {
-                    coord: *edge_coord,
-                    prev: Some(next.coord),
-                };
-                explored.insert(*edge_coord, new_node.clone());
-                exploration_queue.push_back(new_node);
+            for edge_coord in edges.get(&next.coord).unwrap() {
+                if !explored.contains_key(edge_coord) {
+                    let new_node = SearchNode {
+                        coord: *edge_coord,
+                        prev: Some(next.coord),
+                    };
+                    explored.insert(*edge_coord, new_node.clone());
+                    exploration_queue.push_back(new_node);
+                }
             }
         }
+
+        let mut path_length = 0;
+        while let Some(prev) = dest.prev {
+            path_length += 1;
+            dest = explored.get(&prev).unwrap().clone();
+        }
+
+        lengths.push(path_length);
     }
-
-    dbg!(&dest);
-
-    let mut path_length = 0;
-    while let Some(prev) = dest.prev {
-        path_length += 1;
-        dest = explored.get(&prev).unwrap().clone();
-    }
-
-    dbg!(path_length);
+    lengths.sort();
+    dbg!(lengths);
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Debug)]
 struct SearchNode {
     coord: Coord,
     prev: Option<Coord>,
-}
-impl Hash for SearchNode {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.coord.hash(state);
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
