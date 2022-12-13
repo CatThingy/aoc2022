@@ -1,65 +1,73 @@
 fn main() {
     let mut input = std::io::stdin().lines();
-    let mut index = 1;
 
-    let mut score = 0;
+    let mut packets = Vec::<PacketData>::new();
     while let Some(Ok(line)) = input.next() {
-        dbg!(&line);
-        // dbg!(parse_packet_data(&line).unwrap());
-        dbg!(index);
-        let packet_1 = parse_packet_data(&line).unwrap();
-        let packet_2 = parse_packet_data(&input.next().unwrap().unwrap()).unwrap();
-
-        if packet_1.compare(&packet_2).unwrap_or(true) {
-            println!("success: \n{packet_1:?}\n{packet_2:?}\n");
-            score += index;
-        } else {
-            println!("failure: \n{packet_1:?}\n{packet_2:?}\n");
+        if let Some(packet) = parse_packet_data(&line) {
+            packets.push(packet);
         }
-
-        input.next();
-
-        index += 1;
     }
+    packets.push(PacketData::List(vec![PacketData::List(vec![
+        PacketData::Int(2),
+    ])]));
+    packets.push(PacketData::List(vec![PacketData::List(vec![
+        PacketData::Int(6),
+    ])]));
+    packets.sort();
 
-    println!("{score}");
+    let index_1 = packets
+        .binary_search(&PacketData::List(vec![PacketData::List(vec![
+            PacketData::Int(2),
+        ])]))
+        .unwrap();
+
+    let index_2 = packets
+        .binary_search(&PacketData::List(vec![PacketData::List(vec![
+            PacketData::Int(6),
+        ])]))
+        .unwrap();
+
+    println!("{}", (index_1 + 1) * (index_2 + 1));
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum PacketData {
     Int(u32),
     List(Vec<PacketData>),
 }
-
-impl PacketData {
-    fn compare(&self, other: &Self) -> Option<bool> {
-        println!("Comparing {self:?} and {other:?}!");
+impl Ord for PacketData {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+impl PartialOrd for PacketData {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (PacketData::Int(s), PacketData::Int(o)) => {
                 if s != o {
-                    Some(s < o)
+                    s.partial_cmp(o)
                 } else {
                     None
                 }
             }
             (PacketData::Int(_), PacketData::List(_)) => {
-                PacketData::List(vec![self.clone()]).compare(other)
+                PacketData::List(vec![self.clone()]).partial_cmp(other)
             }
             (PacketData::List(_), PacketData::Int(_)) => {
-                self.compare(&PacketData::List(vec![other.clone()]))
+                self.partial_cmp(&PacketData::List(vec![other.clone()]))
             }
             (PacketData::List(s), PacketData::List(o)) => {
                 for (s, o) in s.iter().zip(o.iter()) {
-                    match s.compare(o) {
+                    match s.partial_cmp(o) {
                         Some(t) => return Some(t),
                         _ => {}
                     }
                 }
-                    if s.len() != o.len() {
-                        Some(s.len() < o.len())
-                    } else {
-                        None
-                    }
+                if s.len() != o.len() {
+                    s.len().partial_cmp(&o.len())
+                } else {
+                    None
+                }
             }
         }
     }
