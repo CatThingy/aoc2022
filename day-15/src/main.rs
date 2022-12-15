@@ -1,6 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Add,
+};
 
-const SCAN_LINE: i32 = 2000000;
+const SEARCH_SPACE: i32 = 4000000;
 
 fn main() {
     let input = std::io::stdin();
@@ -8,10 +11,7 @@ fn main() {
     let mut sensors = HashMap::<Coord, u32>::new();
     let mut beacons = HashSet::<Coord>::new();
 
-    let mut min_x: i32 = i32::MAX;
-    let mut max_x: i32 = i32::MIN;
-
-    let mut max_dist = 0;
+    let mut search = HashSet::<Coord>::new();
 
     for line in input.lines() {
         let Ok(line) = line else { break; };
@@ -35,9 +35,6 @@ fn main() {
 
         let sensor_coords = Coord::new(sensor_coords[0], sensor_coords[1]);
 
-        min_x = min_x.min(sensor_coords.x);
-        max_x = max_x.max(sensor_coords.x);
-
         let beacon_coords = beacon_str
             .split(" ")
             .skip(4)
@@ -52,32 +49,43 @@ fn main() {
 
         let beacon_coords = Coord::new(beacon_coords[0], beacon_coords[1]);
 
-        let dist = sensor_coords.distance(&beacon_coords);
-        max_dist = max_dist.max(dist);
+        let dist = sensor_coords.distance(&beacon_coords) as i32 + 1;
+        for x in (-dist)..=(dist) {
+            if sensor_coords.x + x < 0 || sensor_coords.x + x > SEARCH_SPACE {
+                continue;
+            }
+            let y_range = dist - x.abs();
+            for y in [-y_range, y_range] {
+                if sensor_coords.y + y < 0 || sensor_coords.y + y > SEARCH_SPACE {
+                    continue;
+                }
+                search.insert(sensor_coords + Coord { x, y });
+            }
+        }
 
         sensors.insert(sensor_coords, sensor_coords.distance(&beacon_coords));
         beacons.insert(beacon_coords);
     }
 
-    min_x -= max_dist as i32;
-    max_x += max_dist as i32;
+    'a: {
+        for coord in search {
+            if coord.x < 0 || coord.x > SEARCH_SPACE || coord.y < 0 || coord.y > SEARCH_SPACE {
+                continue;
+            }
+            let mut found = true;
+            for (sensor, dist) in sensors.iter() {
+                if sensor.distance(&coord) <= *dist {
+                    found = false;
+                    break;
+                }
+            }
 
-    let mut counter = 0;
-
-    for x in min_x..max_x {
-        let test_coord = Coord::new(x, SCAN_LINE);
-        if beacons.contains(&test_coord) {
-            continue;
-        }
-        for (sensor, dist) in sensors.iter() {
-            if test_coord.distance(sensor) <= *dist {
-                counter += 1;
-                break;
+            if found {
+                println!("{}", coord.x as u64 * 4000000 + coord.y as u64);
+                break 'a;
             }
         }
     }
-
-    dbg!(counter);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -95,16 +103,16 @@ impl Coord {
     }
 }
 
-// impl Add for Coord {
-//     type Output = Coord;
-//
-//     fn add(self, rhs: Self) -> Self::Output {
-//         Self {
-//             x: self.x + rhs.x,
-//             y: self.y + rhs.y,
-//         }
-//     }
-// }
+impl Add for Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
 //
 // impl AddAssign for Coord {
 //     fn add_assign(&mut self, rhs: Self) {
