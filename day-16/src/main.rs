@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 fn main() {
-    dbg!(std::mem::size_of::<Node>());
     let input = std::io::stdin();
 
     let mut valves = HashMap::<String, u32>::new();
@@ -32,57 +31,86 @@ fn main() {
     let mut paths = Vec::<Node>::new();
 
     paths.push(Node {
-        next_action: Action::Open,
         open: HashSet::new(),
         flow_rate: 0,
         pressure: 0,
-        location: "AA",
+        agents: [(Action::Open, "AA"), (Action::Open, "AA")],
     });
 
     let mut counter = 0;
 
-    while counter < 30 {
+    while counter < 26 {
         let mut new_nodes = Vec::<Node>::new();
         for path in &mut paths {
             let fresh_clone = path.clone();
-            let mut first = true;
-            if valves[path.location] != 0 && !path.open.contains(path.location) {
-                path.next_action = Action::Open;
-                first = false;
-            }
 
-            for next_valve in &tunnels[path.location] {
-                if first {
-                    path.next_action = Action::Move(next_valve);
-                    first = false;
-                } else {
+            path.agents[0].0 = Action::Open;
+            path.agents[1].0 = Action::Open;
+
+            for next_valve_0 in &tunnels[path.agents[0].1] {
+                if valves[path.agents[1].1] != 0 && !path.open.contains(path.agents[1].1) {
                     let mut node = fresh_clone.clone();
-                    node.next_action = Action::Move(next_valve);
+                    node.agents[0].0 = Action::Move(next_valve_0);
+                    node.agents[1].0 = Action::Open;
                     new_nodes.push(node);
                 }
+            }
+
+            for next_valve_1 in &tunnels[path.agents[1].1] {
+                if valves[path.agents[0].1] != 0 && !path.open.contains(path.agents[0].1) {
+                    let mut node = fresh_clone.clone();
+                    node.agents[0].0 = Action::Open;
+                    node.agents[1].0 = Action::Move(next_valve_1);
+                    new_nodes.push(node);
+                }
+            }
+
+            for next_valve_0 in &tunnels[path.agents[0].1] {
+                for next_valve_1 in &tunnels[path.agents[1].1] {
+                    let mut node = fresh_clone.clone();
+                    node.agents[0].0 = Action::Move(next_valve_0);
+                    node.agents[1].0 = Action::Move(next_valve_1);
+                    new_nodes.push(node);
+                }
+            }
+
+            if valves[path.agents[0].1] == 0
+                || path.open.contains(path.agents[0].1)
+                || valves[path.agents[1].1] == 0
+                || path.open.contains(path.agents[1].1)
+            {
+                *path = new_nodes.pop().unwrap();
             }
         }
 
         paths.append(&mut new_nodes);
+        // valves[path.agents[0].1] != 0
+        //                 && !path.open.contains(path.agents[0].1)
+        //                 && valves[path.agents[1].1] != 0
+        //                 && !path.open.contains(path.agents[1].1)
 
         for path in &mut paths {
             path.pressure += path.flow_rate;
-            match path.next_action {
-                Action::Open => {
-                    path.open.insert(path.location);
-                    path.flow_rate += valves[path.location];
-                }
-                Action::Move(dest) => {
-                    path.location = dest;
+            for (action, ref mut location) in &mut path.agents {
+                match action {
+                    Action::Open => {
+                        if path.open.insert(location) {
+                            path.flow_rate += valves[*location];
+                        }
+                    }
+                    Action::Move(dest) => {
+                        *location = dest;
+                    }
                 }
             }
         }
         counter += 1;
 
         // Beam search
-        if paths.len() > 1_000_000 {
+        if paths.len() > 10_000 {
             paths.sort_unstable_by_key(|v| u32::MAX - v.pressure);
-            paths.drain(1_000_000..);
+            paths.dedup_by(|a, b| a == b);
+            paths.drain(10_000..);
         }
 
         dbg!(counter, paths.len());
@@ -98,11 +126,10 @@ enum Action<'a> {
     Move(&'a str),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct Node<'a> {
-    next_action: Action<'a>,
     open: HashSet<&'a str>,
     flow_rate: u32,
     pressure: u32,
-    location: &'a str,
+    agents: [(Action<'a>, &'a str); 2],
 }
