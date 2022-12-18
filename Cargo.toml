@@ -17,6 +17,7 @@ members = [
     "day-15",
     "day-16",
     "day-17",
+    "day-18",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
