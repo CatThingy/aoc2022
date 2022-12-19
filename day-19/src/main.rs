@@ -42,7 +42,7 @@ fn main() {
             build: None,
         });
 
-        for j in 0..24 {
+        for j in 0..32 {
             let mut new_nodes = Vec::<Node>::new();
             for path in &mut search_nodes {
                 path.build = None;
@@ -107,9 +107,7 @@ fn main() {
     }
 
     dbg!(&score);
-    let score = score
-        .into_iter()
-        .fold(0, |acc, v| acc + (v.0 + 1) * v.1 as usize);
+    let score = score.into_iter().fold(1, |acc, v| acc * v.1 as usize);
     dbg!(score);
 }
 
