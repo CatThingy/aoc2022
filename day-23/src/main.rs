@@ -49,7 +49,7 @@ fn main() {
         (EAST_CHECK, Coord::new(1, 0)),
     ]);
 
-    for _ in 0..10 {
+    for i in 0.. {
         let mut proposed_movements = Vec::<(Coord, Coord)>::new();
         for coord in map.iter() {
             let mut valid = true;
@@ -78,6 +78,11 @@ fn main() {
             }
         }
 
+        if proposed_movements.is_empty() {
+            println!("{}", i + 1);
+            break;
+        }
+
         let front = checks.pop_front().unwrap();
         checks.push_back(front);
 
@@ -96,21 +101,6 @@ fn main() {
             }
         }
     }
-
-    let mut min_corner = Coord::new(i32::MAX, i32::MAX);
-    let mut max_corner = Coord::new(i32::MIN, i32::MIN);
-
-    for elf in map.iter() {
-        min_corner.x = min_corner.x.min(elf.x);
-        min_corner.y = min_corner.y.min(elf.y);
-
-        max_corner.x = max_corner.x.max(elf.x);
-        max_corner.y = max_corner.y.max(elf.y);
-    }
-
-    let diag = max_corner - min_corner;
-
-    println!("{}", (diag.x + 1) * (diag.y + 1) - map.len() as i32);
 }
 
 fn print_map(map: &HashSet<Coord>, height: i32, width: i32) {
