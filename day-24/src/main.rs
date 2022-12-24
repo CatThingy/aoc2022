@@ -61,9 +61,8 @@ fn main() {
     let begin_node = SearchNode {
         coord: start_point,
         count: 0,
+        state: SearchState::ToEnd,
     };
-    // explored.insert(begin_node.clone());
-    //
 
     exploration_queue.push_back(begin_node);
     blizzard_cache.insert(0, blizzards);
@@ -71,11 +70,28 @@ fn main() {
     let mut dest = SearchNode {
         coord: Coord::new(-1, -1),
         count: 0,
+        state: SearchState::ToStart,
     };
     while let Some(mut next) = exploration_queue.pop_front() {
-        if next.coord == end_point {
-            dest = next;
-            break;
+        match next.state {
+            SearchState::ToEnd => {
+                if next.coord == end_point {
+                    next.state = SearchState::ToStart;
+                    exploration_queue.clear();
+                }
+            }
+            SearchState::ToStart => {
+                if next.coord == start_point {
+                    next.state = SearchState::ToFinish;
+                    exploration_queue.clear();
+                }
+            }
+            SearchState::ToFinish => {
+                if next.coord == end_point {
+                    dest = next;
+                    break;
+                }
+            }
         }
 
         let blizzards = match blizzard_cache.get(&(next.count + 1)) {
@@ -111,7 +127,6 @@ fn main() {
                     if coord.y < 1 {
                         coord.y = max_extents.y;
                     }
-
 
                     assert!(coord.x > 0);
                     assert!(coord.y > 0);
@@ -151,7 +166,7 @@ fn main() {
         }
         exploration_queue.append(&mut future);
     }
-    dbg!(dest);
+    println!("{}", dest.count);
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -169,9 +184,17 @@ enum Tile {
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
+enum SearchState {
+    ToEnd,
+    ToStart,
+    ToFinish,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 struct SearchNode {
     coord: Coord,
     count: u32,
+    state: SearchState,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
